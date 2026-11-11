@@ -1,0 +1,91 @@
+name: helm
+
+# Lint a Helm chart, render it and validate the result.
+#   jobs:
+#     helm:
+#       uses: Sakuratix/platform-ci/.github/workflows/helm.yml@v1
+#       with: { chart: helm/app }
+
+on:
+  workflow_call:
+    inputs:
+      chart:
+        description: Path to the chart
+        type: string
+        required: true
+      values:
+        description: Extra values files, space separated
+        type: string
+        default: ""
+      set:
+        description: Extra --set flags for rendering, space separated (key=value)
+        type: string
+        default: ""
+      kubernetes-version:
+        description: Kubernetes version to validate the schema against
+        type: string
+        default: 1.30.0
+      kube-linter:
+        description: Run kube-linter best-practice checks
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+env:
+  KUBECONFORM_VERSION: v0.6.7
+  KUBE_LINTER_VERSION: v0.7.1
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+
+      - name: Install kubeconform and kube-linter
+        run: |
+          curl -sSL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" | tar xz kubeconform
+          curl -sSL -o kube-linter "https://github.com/stackrox/kube-linter/releases/download/${KUBE_LINTER_VERSION}/kube-linter-linux"
+          chmod +x kube-linter
+          sudo mv kubeconform kube-linter /usr/local/bin/
+
+      - name: helm lint
+        env:
+          CHART: ${{ inputs.chart }}
+          VALUES: ${{ inputs.values }}
+          SETS: ${{ inputs.set }}
+        run: |
+          args=()
+          for f in $VALUES; do args+=(-f "$f"); done
+          for s in $SETS; do args+=(--set "$s"); done
+          helm lint --strict "$CHART" "${args[@]}"
+          helm template ci "$CHART" "${args[@]}" > rendered.yaml
+          echo "rendered $(grep -c '^kind:' rendered.yaml) objects"
+
+      - name: kubeconform
+        env:
+          K8S: ${{ inputs.kubernetes-version }}
+        run: |
+          kubeconform -strict -summary -kubernetes-version "$K8S" \
+            -schema-location default \
+            -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+            rendered.yaml
+
+      - name: kube-linter
+        if: inputs.kube-linter
+        run: kube-linter lint rendered.yaml
+
+      - name: Summary
+        if: always()
+        env:
+          CHART: ${{ inputs.chart }}
+        run: |
+          {
+            echo "### Helm \`$CHART\`"
+            echo "Rendered objects:"
+            echo '```'
+            grep '^kind:' rendered.yaml 2>/dev/null | sort | uniq -c || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

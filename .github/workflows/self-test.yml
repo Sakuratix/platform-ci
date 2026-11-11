@@ -1,0 +1,43 @@
+name: self-test
+
+# The reusable workflows test themselves against small fixtures on every change.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  actionlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: actionlint
+        run: |
+          bash <(curl -sSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          ./actionlint -color
+
+  docker:
+    uses: ./.github/workflows/docker.yml
+    with:
+      context: tests/fixtures/app
+      push: false
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+
+  terraform:
+    uses: ./.github/workflows/terraform.yml
+    with:
+      working-directory: tests/fixtures/terraform
+    permissions:
+      contents: read
+      pull-requests: write
+
+  helm:
+    uses: ./.github/workflows/helm.yml
+    with:
+      chart: tests/fixtures/chart
