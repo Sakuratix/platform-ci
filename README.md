@@ -61,3 +61,7 @@ cosign verify ghcr.io/sakuratix/infra-lab:latest \
 ## Версии
 
 Теги `v1`, `v1.x.y`. Ломающие изменения только в новой мажорной версии. Для максимальной предсказуемости можно закрепить конкретный SHA вместо тега.
+
+## Versions
+
+Releases are tagged `vX.Y.Z` and never move. The `v1` tag is moved by [`major-tag.yml`](.github/workflows/major-tag.yml) to the newest `v1.x.y` release: pin `@v1` to get fixes automatically, or `@v1.0.0` to freeze.
