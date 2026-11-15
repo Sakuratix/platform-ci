@@ -41,3 +41,9 @@ jobs:
     uses: ./.github/workflows/helm.yml
     with:
       chart: tests/fixtures/chart
+
+  security:
+    uses: ./.github/workflows/security.yml
+    permissions:
+      contents: read
+      security-events: write
