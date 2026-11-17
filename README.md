@@ -66,8 +66,15 @@ cosign verify ghcr.io/sakuratix/infra-lab:latest \
 
 ## Версии
 
-Теги `v1`, `v1.x.y`. Ломающие изменения только в новой мажорной версии. Для максимальной предсказуемости можно закрепить конкретный SHA вместо тега.
+Релизы помечаются тегами `vX.Y.Z`, и эти теги никогда не двигаются. Тег `v1` переносит [`major-tag.yml`](.github/workflows/major-tag.yml) на самый свежий `v1.x.y`: закрепи `@v1`, чтобы получать исправления автоматически, `@v1.0.0`, чтобы заморозить версию, или полный SHA коммита для максимальной предсказуемости. Ломающие изменения только в новой мажорной версии.
 
-## Versions
+## In English
 
-Releases are tagged `vX.Y.Z` and never move. The `v1` tag is moved by [`major-tag.yml`](.github/workflows/major-tag.yml) to the newest `v1.x.y` release: pin `@v1` to get fixes automatically, or `@v1.0.0` to freeze.
+Reusable GitHub Actions workflows so each repository gets the same CI with one `uses:` line instead of copy-pasted YAML:
+
+- `docker.yml`: hadolint, cached buildx (multi-arch on request), Trivy gate on fixable HIGH/CRITICAL, SPDX SBOM, push to GHCR and keyless cosign signing. Pull requests build and scan but never publish.
+- `terraform.yml`: fmt, validate, tflint, and one sticky PR comment with the results.
+- `helm.yml`: lint, render, kubeconform against several Kubernetes versions, kube-linter.
+- `security.yml`: gitleaks over the whole git history and a Trivy file-system scan, both reported to the Security tab.
+
+Every workflow is exercised against fixtures in `tests/fixtures` by [`self-test.yml`](.github/workflows/self-test.yml). Pin `@v1` for fixes, `@v1.x.y` to freeze.
