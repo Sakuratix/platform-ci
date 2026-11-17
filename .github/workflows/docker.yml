@@ -1,6 +1,6 @@
 name: docker
 
-# Build, lint, scan, describe and sign a container image.
+# Build, lint, scan, describe and sign a container image (multi-arch if asked).
 #   jobs:
 #     image:
 #       uses: Sakuratix/platform-ci/.github/workflows/docker.yml@v1
@@ -30,6 +30,12 @@ on:
         description: Trivy severities that fail the build
         type: string
         default: CRITICAL,HIGH
+      platforms:
+        description: >-
+          Platforms to push, comma separated, e.g. linux/amd64,linux/arm64.
+          The scan always runs on linux/amd64; other platforms are built with QEMU
+        type: string
+        default: linux/amd64
       build-args:
         description: Extra build args, one per line
         type: string
@@ -77,6 +83,9 @@ jobs:
         with:
           dockerfile: ${{ inputs.context }}/${{ inputs.dockerfile }}
 
+      - uses: docker/setup-qemu-action@v3
+        if: steps.meta.outputs.push == 'true' && inputs.platforms != 'linux/amd64'
+
       - uses: docker/setup-buildx-action@v3
 
       - name: Build
@@ -121,6 +130,7 @@ jobs:
           context: ${{ inputs.context }}
           file: ${{ inputs.context }}/${{ inputs.dockerfile }}
           push: true
+          platforms: ${{ inputs.platforms }}
           tags: |
             ${{ steps.meta.outputs.image }}:${{ github.sha }}
             ${{ steps.meta.outputs.image }}:latest
@@ -142,6 +152,7 @@ jobs:
           IMAGE: ${{ steps.meta.outputs.image }}
           PUSHED: ${{ steps.meta.outputs.push }}
           DIGEST: ${{ steps.push.outputs.digest }}
+          PLATFORMS: ${{ inputs.platforms }}
         run: |
           {
             echo "### Image"
@@ -149,6 +160,7 @@ jobs:
             echo "|---|---|"
             echo "| image | \`$IMAGE:$GITHUB_SHA\` |"
             echo "| pushed | $PUSHED |"
+            echo "| platforms | \`$PLATFORMS\` |"
             echo "| digest | \`${DIGEST:-n/a}\` |"
             echo "| signed | $([[ -n "$DIGEST" ]] && echo "cosign keyless" || echo "no") |"
             echo "| SBOM | artifact \`sbom-$GITHUB_SHA.spdx.json\` |"
