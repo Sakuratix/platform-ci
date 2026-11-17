@@ -60,6 +60,7 @@ cosign verify ghcr.io/sakuratix/infra-lab:latest \
 - **Pull request ничего не публикует.** Push и подпись только из основной ветки, поэтому чужой форк не положит образ в registry.
 - **`ignore-unfixed: true`.** Сборка падает только на уязвимостях, для которых уже есть исправление: на остальные команда всё равно не может повлиять, а красный CI без действия быстро начинают игнорировать.
 - **Keyless cosign.** Подпись выдаётся через OIDC-токен GitHub на конкретный workflow. Нет приватного ключа, который нужно хранить и ротировать.
+- **`persist-credentials: false` на каждом checkout**, кроме `major-tag.yml`, который единственный пушит. Иначе `GITHUB_TOKEN` остаётся в `.git/config` на всё время job, и его может прочитать любой шаг, включая сторонний action или скрипт сборки.
 - **Секреты и пользовательский ввод не подставляются в `run:` напрямую**, только через `env`. Это защита от script injection в GitHub Actions.
 - **Самотесты.** [`self-test.yml`](.github/workflows/self-test.yml) прогоняет каждый workflow на фикстурах из `tests/fixtures` и проверяет сами workflow через `actionlint`.
 

@@ -44,6 +44,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: azure/setup-helm@v4
 
       - name: Install kubeconform and kube-linter
