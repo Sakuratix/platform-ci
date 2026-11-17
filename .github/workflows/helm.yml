@@ -22,9 +22,11 @@ on:
         type: string
         default: ""
       kubernetes-version:
-        description: Kubernetes version to validate the schema against
+        description: >-
+          Kubernetes versions to validate against, space separated. Checking the
+          oldest and newest cluster you run catches removed APIs before an upgrade
         type: string
-        default: 1.30.0
+        default: 1.30.0 1.33.0
       kube-linter:
         description: Run kube-linter best-practice checks
         type: boolean
@@ -68,10 +70,14 @@ jobs:
         env:
           K8S: ${{ inputs.kubernetes-version }}
         run: |
-          kubeconform -strict -summary -kubernetes-version "$K8S" \
-            -schema-location default \
-            -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
-            rendered.yaml
+          for v in $K8S; do
+            echo "::group::Kubernetes $v"
+            kubeconform -strict -summary -kubernetes-version "$v" \
+              -schema-location default \
+              -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+              rendered.yaml
+            echo "::endgroup::"
+          done
 
       - name: kube-linter
         if: inputs.kube-linter

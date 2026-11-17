@@ -9,7 +9,7 @@
 | [`docker.yml`](.github/workflows/docker.yml) | hadolint → buildx с кэшем (и multi-arch через `platforms: linux/amd64,linux/arm64`) → Trivy (падает на HIGH/CRITICAL с доступным фиксом) → SBOM в SPDX → push в GHCR → подпись cosign keyless. На pull request только проверяет, ничего не публикует. |
 | [`terraform.yml`](.github/workflows/terraform.yml) | `fmt`, `init -backend=false`, `validate`, `tflint`. В pull request оставляет один комментарий с таблицей результатов и обновляет его на следующих пушах вместо спама. |
 | [`security.yml`](.github/workflows/security.yml) | gitleaks по **всей** истории git (ключ, который закоммитили и «удалили» следующим коммитом, всё ещё утёк) + Trivy по файловой системе: уязвимые зависимости в lock-файлах и опасные настройки в Dockerfile, манифестах, Helm и Terraform. Находки уходят во вкладку Security как SARIF. |
-| [`helm.yml`](.github/workflows/helm.yml) | `helm lint --strict`, рендер, `kubeconform` по схемам Kubernetes и CRD, `kube-linter` на best practices: пробы, лимиты, read-only FS, anti-affinity. |
+| [`helm.yml`](.github/workflows/helm.yml) | `helm lint --strict`, рендер, `kubeconform` по схемам Kubernetes и CRD сразу для нескольких версий кластера (по умолчанию 1.30 и 1.33: удалённые API видно до апгрейда), `kube-linter` на best practices: пробы, лимиты, read-only FS, anti-affinity. |
 
 ## Подключение
 
